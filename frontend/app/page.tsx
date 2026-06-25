@@ -2,37 +2,12 @@ import { ChildCard } from "@/components/ChildCard";
 import { ScheduleList } from "@/components/ScheduleList";
 import { TaskList } from "@/components/TaskList";
 import { AIAssistant } from "@/components/AIAssistant";
-
-const children = [
-  {
-    name: "Euan Miguel",
-    age: 11,
-    focus: "Bedtime routine",
-  },
-  {
-    name: "Euell Mikko",
-    age: 8,
-    focus: "Homework consistency",
-  },
-];
-
-const schedule = [
-  "7:00 AM - Breakfast",
-  "8:00 AM - School drop-off",
-  "5:30 PM - Homework check",
-  "6:30 PM - Dinner",
-  "8:00 PM - Bedtime routine",
-];
-
-const tasks = [
-  "Pack school bags",
-  "Prepare lunch boxes",
-  "Review homework",
-  "Read for 15 minutes",
-];
-
-const mockAiResponse =
-  "Start with dinner, bath, pajamas, one short story, then lights out. Keep the routine predictable and calm.";
+import {
+  children,
+  mockAiResponse,
+  schedule,
+  tasks,
+} from "@/data/dashboard";
 
 export default function Home() {
   return (

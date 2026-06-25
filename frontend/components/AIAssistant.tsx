@@ -1,8 +1,32 @@
+"use client";
+
+import { useState } from "react";
+
 type AIAssistantProps = {
   mockResponse: string;
 };
 
 export function AIAssistant({ mockResponse }: AIAssistantProps) {
+  const [question, setQuestion] = useState("");
+  const [response, setResponse] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  async function handleAskAi() {
+    if (!question.trim()) {
+      setResponse("Please enter a question first.");
+      return;
+    }
+
+    setIsLoading(true);
+    setResponse("");
+
+    await new Promise((resolve) => setTimeout(resolve, 800));
+
+    setResponse(`${mockResponse} You asked: "${question}"`);
+    setQuestion("");
+    setIsLoading(false);
+  }
+
   return (
     <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
       <h2 className="text-xl font-semibold">AI Helper</h2>
@@ -13,16 +37,30 @@ export function AIAssistant({ mockResponse }: AIAssistantProps) {
       <div className="mt-4 flex flex-col gap-3 sm:flex-row">
         <input
           type="text"
+          value={question}
+          onChange={(event) => setQuestion(event.target.value)}
+          onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                handleAskAi();
+                }
+            }}
           placeholder="Example: Create a simple bedtime routine"
           className="min-h-11 flex-1 rounded-md border border-slate-300 px-3 text-sm outline-none focus:border-teal-600"
         />
-        <button className="min-h-11 rounded-md bg-teal-700 px-5 text-sm font-semibold text-white hover:bg-teal-800">
-          Ask AI
+        <button
+          type="button"
+          onClick={handleAskAi}
+          disabled={isLoading}
+          className="min-h-11 rounded-md bg-teal-700 px-5 text-sm font-semibold text-white hover:bg-teal-800"
+        >
+            {isLoading ? "Thinking..." : "Ask AI"}
         </button>
       </div>
 
       <div className="mt-4 rounded-md bg-slate-50 p-4 text-sm text-slate-700">
-        Mock response: {mockResponse}
+        {isLoading
+          ? "Thinking through a calm parent-friendly answer..."
+          : response || "Mock response will appear here after you ask a question."}
       </div>
     </section>
   );
