@@ -20,11 +20,29 @@ export function AIAssistant({ mockResponse }: AIAssistantProps) {
     setIsLoading(true);
     setResponse("");
 
-    await new Promise((resolve) => setTimeout(resolve, 800));
+    try {
+      const result = await fetch("/api/parent-assistant", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ question }),
+      });
 
-    setResponse(`${mockResponse} You asked: "${question}"`);
-    setQuestion("");
-    setIsLoading(false);
+      const data = await result.json();
+
+      if (!result.ok) {
+        setResponse(data.error || "Something went wrong.");
+        return;
+      }
+
+      setResponse(data.answer);
+      setQuestion("");
+    } catch {
+      setResponse("Unable to reach the assistant. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   return (
