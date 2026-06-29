@@ -7,19 +7,13 @@ type TaskListProps = {
 };
 
 export function TaskList({ tasks }: TaskListProps) {
-  const [completedTasks, setCompletedTasks] = useState<string[]>([]);
+  const [completedTasks, setCompletedTasks] = useState<string[]>(
+    getInitialCompletedTasks,
+  );
   const completedCount = completedTasks.length;
   const totalCount = tasks.length;
   const progressPercentage =
     totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
-
-  useEffect(() => {
-    const savedTasks = localStorage.getItem("parentpal-completed-tasks");
-
-    if (savedTasks) {
-      setCompletedTasks(JSON.parse(savedTasks));
-    }
-  }, []);
 
   useEffect(() => {
     localStorage.setItem(
@@ -27,6 +21,20 @@ export function TaskList({ tasks }: TaskListProps) {
       JSON.stringify(completedTasks),
     );
   }, [completedTasks]);
+
+  function getInitialCompletedTasks() {
+    if (typeof window === "undefined") {
+      return [];
+    }
+
+    const savedTasks = localStorage.getItem("parentpal-completed-tasks");
+
+    if (!savedTasks) {
+      return [];
+    }
+
+    return JSON.parse(savedTasks) as string[];
+  }
 
   function toggleTask(task: string) {
     setCompletedTasks((currentTasks) => {

@@ -1,12 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { askParentAssistant } from "@/lib/parentAssistantClient";
 
-type AIAssistantProps = {
-  mockResponse: string;
-};
-
-export function AIAssistant({ mockResponse }: AIAssistantProps) {
+export function AIAssistant() {
   const [question, setQuestion] = useState("");
   const [response, setResponse] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -21,22 +18,9 @@ export function AIAssistant({ mockResponse }: AIAssistantProps) {
     setResponse("");
 
     try {
-      const result = await fetch("/api/parent-assistant", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ question }),
-      });
+      const answer = await askParentAssistant(question);
 
-      const data = await result.json();
-
-      if (!result.ok) {
-        setResponse(data.error || "Something went wrong.");
-        return;
-      }
-
-      setResponse(data.answer);
+      setResponse(answer);
       setQuestion("");
     } catch {
       setResponse("Unable to reach the assistant. Please try again.");

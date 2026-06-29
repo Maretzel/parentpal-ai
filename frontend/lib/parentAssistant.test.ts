@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createParentAssistantAnswer, parseParentAssistantRequest } from "./parentAssistant";
+import { parseParentAssistantRequest } from "./parentAssistant";
 
 describe("parseParentAssistantRequest", () => {
   it("returns a trimmed question when the body is valid", () => {

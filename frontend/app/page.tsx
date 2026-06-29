@@ -4,7 +4,6 @@ import { TaskList } from "@/components/TaskList";
 import { AIAssistant } from "@/components/AIAssistant";
 import {
   children,
-  mockAiResponse,
   schedule,
   tasks,
 } from "@/data/dashboard";
@@ -41,7 +40,7 @@ export default function Home() {
 
         </section>
 
-        <AIAssistant mockResponse={mockAiResponse} />
+        <AIAssistant />
       </section>
     </main>
   );
