@@ -7,6 +7,7 @@ export function AIAssistant() {
   const [question, setQuestion] = useState("");
   const [response, setResponse] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [provider, setProvider] = useState<"mock" | "openai" | null>(null);
 
   async function handleAskAi() {
     if (!question.trim()) {
@@ -18,12 +19,17 @@ export function AIAssistant() {
     setResponse("");
 
     try {
-      const answer = await askParentAssistant(question);
+      const result = await askParentAssistant(question);
 
-      setResponse(answer);
-      setQuestion("");
-    } catch {
-      setResponse("Unable to reach the assistant. Please try again.");
+      setResponse(result.answer);
+      setProvider(result.provider);
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Unable to reach the assistant. Please try again.";
+
+      setResponse(message);
     } finally {
       setIsLoading(false);
     }
@@ -32,6 +38,11 @@ export function AIAssistant() {
   return (
     <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
       <h2 className="text-xl font-semibold">AI Helper</h2>
+      {provider === "mock" && (
+        <p className="mt-2 text-xs font-medium text-amber-700">
+          Demo mode
+        </p>
+      )}
       <p className="mt-2 text-sm text-slate-600">
         Ask for quick help with meals, routines, school prep, or bedtime.
       </p>

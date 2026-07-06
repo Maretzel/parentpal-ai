@@ -1,22 +1,32 @@
 import {
-  createParentAssistantAnswer,
+  ParentAssistantValidationError,
   parseParentAssistantRequest,
   type ParentAssistantErrorResponse,
   type ParentAssistantSuccessResponse,
 } from "@/lib/parentAssistant";
+import { askParentAssistantProvider } from "@/lib/parentAssistantProvider";
 import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
     const { question } = parseParentAssistantRequest(body);
-    const answer = createParentAssistantAnswer(question);
+    const result = await askParentAssistantProvider(question);
 
-    return NextResponse.json<ParentAssistantSuccessResponse>({ answer });
-  } catch {
+    return NextResponse.json<ParentAssistantSuccessResponse>(result);
+    } catch (error) {
+    if (error instanceof ParentAssistantValidationError) {
+      return NextResponse.json<ParentAssistantErrorResponse>(
+        { error: error.message },
+        { status: 400 },
+      );
+    }
+
+    console.error("Parent assistant API error:", error);
+
     return NextResponse.json<ParentAssistantErrorResponse>(
-      { error: "Question is required." },
-      { status: 400 },
+      { error: "Unable to create an assistant response." },
+      { status: 500 },
     );
   }
 }

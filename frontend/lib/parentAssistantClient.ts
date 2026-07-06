@@ -23,5 +23,5 @@ export async function askParentAssistant(question: string) {
 
   const successData = data as ParentAssistantSuccessResponse;
 
-  return successData.answer;
+  return successData;
 }

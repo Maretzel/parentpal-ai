@@ -1,4 +1,14 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+vi.mock("@/lib/parentAssistantProvider", () => ({
+  askParentAssistantProvider: vi.fn(async (question: string) => {
+    return {
+      answer: `Mock AI answer for: ${question}`,
+      provider: "mock",
+    };
+  }),
+}));
+
 import { POST } from "./route";
 
 function createJsonRequest(body: unknown) {
@@ -21,6 +31,7 @@ describe("POST /api/parent-assistant", () => {
 
     expect(response.status).toBe(200);
     expect(body.answer).toContain("Create a bedtime routine");
+    expect(body.provider).toBe("mock");
   });
 
   it("returns 400 when the question is missing", async () => {
