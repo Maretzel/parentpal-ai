@@ -10,8 +10,14 @@ const EMPTY_COMPLETED_TASKS: string[] = [];
 let cachedRawTasks: string | null = null;
 let cachedCompletedTasks: string[] = EMPTY_COMPLETED_TASKS;
 
+type Task = {
+  id: string;
+  title: string;
+  is_completed: boolean;
+};
+
 type TaskListProps = {
-  tasks: string[];
+  tasks: Task[];
 };
 
 function readCompletedTasks() {
@@ -64,15 +70,15 @@ export function TaskList({ tasks }: TaskListProps) {
   const progressPercentage =
     totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
-  function toggleTask(task: string) {
-    if (completedTasks.includes(task)) {
+  function toggleTask(taskId: string) {
+    if (completedTasks.includes(taskId)) {
       saveCompletedTasks(
-        completedTasks.filter((currentTask) => currentTask !== task),
+        completedTasks.filter((currentTaskId) => currentTaskId !== taskId),
       );
       return;
     }
 
-    saveCompletedTasks([...completedTasks, task]);
+    saveCompletedTasks([...completedTasks, taskId]);
   }
 
   return (
@@ -104,20 +110,20 @@ export function TaskList({ tasks }: TaskListProps) {
 
       <ul className="mt-4 space-y-3">
         {tasks.map((task) => {
-          const isCompleted = completedTasks.includes(task);
+          const isCompleted = completedTasks.includes(task.id);
 
           return (
-            <li key={task} className="flex items-center gap-3 text-sm">
+            <li key={task.id} className="flex items-center gap-3 text-sm">
               <input
                 type="checkbox"
                 checked={isCompleted}
-                onChange={() => toggleTask(task)}
+                onChange={() => toggleTask(task.id)}
                 className="h-4 w-4 rounded"
               />
               <span
                 className={isCompleted ? "text-slate-400 line-through" : ""}
               >
-                {task}
+                {task.title}
               </span>
             </li>
           );

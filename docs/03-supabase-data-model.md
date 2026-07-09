@@ -81,3 +81,17 @@ Possible future tables:
 - `assistant_messages`
 - `appointments`
 - `meal_ideas`
+
+
+## First Supabase Integration
+
+The first database-backed feature is the dashboard child profile list.
+
+Flow:
+
+```mermaid
+flowchart LR
+    A["app/page.tsx"] --> B["getChildren()"]
+    B --> C["supabaseClient.ts"]
+    C --> D["Supabase children table"]
+    D --> A

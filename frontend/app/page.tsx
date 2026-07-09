@@ -3,12 +3,15 @@ import { ScheduleList } from "@/components/ScheduleList";
 import { TaskList } from "@/components/TaskList";
 import { AIAssistant } from "@/components/AIAssistant";
 import {
-  children,
   schedule,
-  tasks,
 } from "@/data/dashboard";
+import { getChildren } from "@/lib/childrenRepository";
+import { getTasks } from "@/lib/tasksRepository";
 
-export default function Home() {
+export default async function Home() {
+  const children = await getChildren();
+  const tasks = await getTasks();
+
   return (
     <main className="min-h-screen bg-slate-50 px-6 py-8 text-slate-900">
       <section className="mx-auto flex max-w-6xl flex-col gap-8">
@@ -25,7 +28,7 @@ export default function Home() {
         <section className="grid gap-4 md:grid-cols-2">
           {children.map((child) => (
             <ChildCard
-              key={child.name}
+              key={child.id}
               name={child.name}
               age={child.age}
               focus={child.focus}
