@@ -1,14 +1,11 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
-
-const STORAGE_KEY = "parentpal-completed-tasks";
-const STORAGE_EVENT = "parentpal-completed-tasks-changed";
-
-const EMPTY_COMPLETED_TASKS: string[] = [];
-
-let cachedRawTasks: string | null = null;
-let cachedCompletedTasks: string[] = EMPTY_COMPLETED_TASKS;
+import {
+  createTaskRequest,
+  deleteTaskRequest,
+  updateTaskCompletionRequest,
+} from "@/lib/tasksClient";
+import { useState } from "react";
 
 type Task = {
   id: string;
@@ -20,65 +17,88 @@ type TaskListProps = {
   tasks: Task[];
 };
 
-function readCompletedTasks() {
-  if (typeof window === "undefined") {
-    return EMPTY_COMPLETED_TASKS;
-  }
-
-  const savedTasks = localStorage.getItem(STORAGE_KEY);
-
-  if (!savedTasks) {
-    cachedRawTasks = null;
-    cachedCompletedTasks = EMPTY_COMPLETED_TASKS;
-    return cachedCompletedTasks;
-  }
-
-  if (savedTasks === cachedRawTasks) {
-    return cachedCompletedTasks;
-  }
-
-  cachedRawTasks = savedTasks;
-  cachedCompletedTasks = JSON.parse(savedTasks) as string[];
-
-  return cachedCompletedTasks;
-}
-
-function subscribeToCompletedTasks(onStoreChange: () => void) {
-  window.addEventListener("storage", onStoreChange);
-  window.addEventListener(STORAGE_EVENT, onStoreChange);
-
-  return () => {
-    window.removeEventListener("storage", onStoreChange);
-    window.removeEventListener(STORAGE_EVENT, onStoreChange);
-  };
-}
-
-function saveCompletedTasks(tasks: string[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
-  window.dispatchEvent(new Event(STORAGE_EVENT));
-}
-
 export function TaskList({ tasks }: TaskListProps) {
-  const completedTasks = useSyncExternalStore(
-    subscribeToCompletedTasks,
-    readCompletedTasks,
-    () => EMPTY_COMPLETED_TASKS,
-  );
+  const [currentTasks, setCurrentTasks] = useState(tasks);
+  const [isUpdatingTaskId, setIsUpdatingTaskId] = useState<string | null>(null);
 
-  const completedCount = completedTasks.length;
-  const totalCount = tasks.length;
+  const completedCount = currentTasks.filter((task) => task.is_completed).length;
+  const totalCount = currentTasks.length;
   const progressPercentage =
     totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
-  function toggleTask(taskId: string) {
-    if (completedTasks.includes(taskId)) {
-      saveCompletedTasks(
-        completedTasks.filter((currentTaskId) => currentTaskId !== taskId),
-      );
+  const [newTaskTitle, setNewTaskTitle] = useState("");
+  const [isCreatingTask, setIsCreatingTask] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+
+  const [deletingTaskId, setDeletingTaskId] = useState<string | null>(null);
+
+  async function toggleTask(taskId: string) {
+    const task = currentTasks.find((currentTask) => currentTask.id === taskId);
+
+    if (!task) {
       return;
     }
 
-    saveCompletedTasks([...completedTasks, taskId]);
+    const nextIsCompleted = !task.is_completed;
+
+    setIsUpdatingTaskId(taskId);
+
+    try {
+      const updatedTask = await updateTaskCompletionRequest(
+        taskId,
+        nextIsCompleted,
+      );
+
+      setCurrentTasks((tasksSnapshot) =>
+        tasksSnapshot.map((currentTask) =>
+          currentTask.id === taskId ? updatedTask : currentTask,
+        ),
+      );
+    } catch {
+      // Later we can show a proper error message.
+    } finally {
+      setIsUpdatingTaskId(null);
+    }
+  }
+
+  async function handleCreateTask(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!newTaskTitle.trim()) {
+      setErrorMessage("Please enter a task title.");
+      return;
+    }
+
+    setIsCreatingTask(true);
+    setErrorMessage("");
+
+    try {
+      const createdTask = await createTaskRequest(newTaskTitle);
+
+      setCurrentTasks((tasksSnapshot) => [...tasksSnapshot, createdTask]);
+      setNewTaskTitle("");
+    } catch {
+      setErrorMessage("Unable to add task. Please try again.");
+    } finally {
+      setIsCreatingTask(false);
+    }
+  }
+
+  async function handleDeleteTask(taskId: string) {
+    setDeletingTaskId(taskId);
+    setErrorMessage("");
+
+    try {
+      await deleteTaskRequest(taskId);
+
+      setCurrentTasks((tasksSnapshot) =>
+        tasksSnapshot.filter((task) => task.id !== taskId),
+      );
+    } catch {
+      setErrorMessage("Unable to delete task. Please try again.");
+    } finally {
+      setDeletingTaskId(null);
+    }
   }
 
   return (
@@ -90,15 +110,6 @@ export function TaskList({ tasks }: TaskListProps) {
             {completedCount} of {totalCount} done - {progressPercentage}%
           </p>
         </div>
-
-        <button
-          type="button"
-          onClick={() => saveCompletedTasks([])}
-          disabled={completedTasks.length === 0}
-          className="rounded-md border border-slate-200 px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-300"
-        >
-          Clear
-        </button>
       </div>
 
       <div className="mt-4 h-2 rounded-full bg-slate-100">
@@ -108,22 +119,55 @@ export function TaskList({ tasks }: TaskListProps) {
         />
       </div>
 
+      <form onSubmit={handleCreateTask} className="mt-4 flex flex-col gap-3 sm:flex-row">
+        <input
+          type="text"
+          value={newTaskTitle}
+          onChange={(event) => setNewTaskTitle(event.target.value)}
+          placeholder="Add a family task"
+          className="min-h-11 flex-1 rounded-md border border-slate-300 px-3 text-sm outline-none focus:border-teal-600"
+        />
+        
+        <button
+          type="submit"
+          disabled={isCreatingTask}
+          className="min-h-11 rounded-md bg-teal-700 px-5 text-sm font-semibold text-white hover:bg-teal-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+        >
+          {isCreatingTask ? "Adding..." : "Add"}
+        </button>
+      </form>
+
+      {errorMessage && (
+        <p className="mt-2 text-sm text-red-600">{errorMessage}</p>
+      )}
+
       <ul className="mt-4 space-y-3">
-        {tasks.map((task) => {
-          const isCompleted = completedTasks.includes(task.id);
+        {currentTasks.map((task) => {
+          const isUpdating = isUpdatingTaskId === task.id;
 
           return (
             <li key={task.id} className="flex items-center gap-3 text-sm">
               <input
                 type="checkbox"
-                checked={isCompleted}
+                checked={task.is_completed}
+                disabled={isUpdating}
                 onChange={() => toggleTask(task.id)}
                 className="h-4 w-4 rounded"
               />
               <span
-                className={isCompleted ? "text-slate-400 line-through" : ""}
+                className={
+                  task.is_completed ? "text-slate-400 line-through" : ""
+                }
               >
                 {task.title}
+                <button
+                  type="button"
+                  onClick={() => handleDeleteTask(task.id)}
+                  disabled={deletingTaskId === task.id}
+                  className="ml-auto rounded-md border border-slate-200 px-2 py-1 text-xs text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-300"
+                >
+                  {deletingTaskId === task.id ? "Deleting..." : "Delete"}
+                </button>
               </span>
             </li>
           );
