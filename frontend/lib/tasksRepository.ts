@@ -67,3 +67,24 @@ export async function deleteTask(taskId: string) {
     throw new Error(error.message);
   }
 }
+
+export async function updateTaskTitle(taskId: string, title: string) {
+  const trimmedTitle = title.trim();
+
+  if (!trimmedTitle) {
+    throw new Error("Task title is required.");
+  }
+
+  const { data, error } = await supabase
+    .from("tasks")
+    .update({ title: trimmedTitle })
+    .eq("id", taskId)
+    .select("id, title, is_completed")
+    .single();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return data satisfies Task;
+}

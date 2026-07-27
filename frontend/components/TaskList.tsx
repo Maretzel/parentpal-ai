@@ -4,6 +4,7 @@ import {
   createTaskRequest,
   deleteTaskRequest,
   updateTaskCompletionRequest,
+  updateTaskTitleRequest,
 } from "@/lib/tasksClient";
 import { useState } from "react";
 
@@ -31,6 +32,10 @@ export function TaskList({ tasks }: TaskListProps) {
   const [errorMessage, setErrorMessage] = useState("");
 
   const [deletingTaskId, setDeletingTaskId] = useState<string | null>(null);
+
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+  const [editingTitle, setEditingTitle] = useState("");
+  const [savingTitleTaskId, setSavingTitleTaskId] = useState<string | null>(null);
 
   async function toggleTask(taskId: string) {
     const task = currentTasks.find((currentTask) => currentTask.id === taskId);
@@ -101,6 +106,43 @@ export function TaskList({ tasks }: TaskListProps) {
     }
   }
 
+  function startEditingTask(taskId: string, title: string) {
+    setEditingTaskId(taskId);
+    setEditingTitle(title);
+    setErrorMessage("");
+  }
+
+  function cancelEditingTask() {
+    setEditingTaskId(null);
+    setEditingTitle("");
+  }
+
+  async function handleSaveTaskTitle(taskId: string) {
+    if (!editingTitle.trim()) {
+      setErrorMessage("Task title is required.");
+      return;
+    }
+
+    setSavingTitleTaskId(taskId);
+    setErrorMessage("");
+
+    try {
+      const updatedTask = await updateTaskTitleRequest(taskId, editingTitle);
+
+      setCurrentTasks((tasksSnapshot) =>
+        tasksSnapshot.map((task) =>
+          task.id === taskId ? updatedTask : task,
+        ),
+      );
+
+      cancelEditingTask();
+    } catch {
+      setErrorMessage("Unable to update task. Please try again.");
+    } finally {
+      setSavingTitleTaskId(null);
+    }
+  }
+
   return (
     <article className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
       <div className="flex items-start justify-between gap-4">
@@ -154,21 +196,57 @@ export function TaskList({ tasks }: TaskListProps) {
                 onChange={() => toggleTask(task.id)}
                 className="h-4 w-4 rounded"
               />
-              <span
-                className={
-                  task.is_completed ? "text-slate-400 line-through" : ""
-                }
-              >
-                {task.title}
-                <button
-                  type="button"
-                  onClick={() => handleDeleteTask(task.id)}
-                  disabled={deletingTaskId === task.id}
-                  className="ml-auto rounded-md border border-slate-200 px-2 py-1 text-xs text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-300"
-                >
-                  {deletingTaskId === task.id ? "Deleting..." : "Delete"}
-                </button>
-              </span>
+
+              {editingTaskId === task.id ? (
+                <>
+                  <input
+                    type="text"
+                    value={editingTitle}
+                    onChange={(event) => setEditingTitle(event.target.value)}
+                    className="min-h-9 flex-1 rounded-md border border-slate-300 px-3 text-sm outline-none focus:border-teal-600"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleSaveTaskTitle(task.id)}
+                    disabled={savingTitleTaskId === task.id}
+                    className="rounded-md bg-teal-700 px-2 py-1 text-xs font-medium text-white hover:bg-teal-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+                  >
+                    {savingTitleTaskId === task.id ? "Saving..." : "Save"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={cancelEditingTask}
+                    className="rounded-md border border-slate-200 px-2 py-1 text-xs text-slate-600 hover:bg-slate-50"
+                  >
+                    Cancel
+                  </button>
+                </>
+              ) : (
+                <>
+                  <span
+                    className={
+                      task.is_completed ? "text-slate-400 line-through" : ""
+                    }
+                  >
+                    {task.title}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => startEditingTask(task.id, task.title)}
+                    className="ml-auto rounded-md border border-slate-200 px-2 py-1 text-xs text-slate-600 hover:bg-slate-50"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteTask(task.id)}
+                    disabled={deletingTaskId === task.id}
+                    className="rounded-md border border-slate-200 px-2 py-1 text-xs text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-300"
+                  >
+                    {deletingTaskId === task.id ? "Deleting..." : "Delete"}
+                  </button>
+                </>
+              )}
             </li>
           );
         })}
