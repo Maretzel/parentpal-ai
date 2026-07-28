@@ -7,6 +7,7 @@ import {
 } from "@/data/dashboard";
 import { getChildren } from "@/lib/childrenRepository";
 import { getTasks } from "@/lib/tasksRepository";
+import { AuthPanel } from "@/components/AuthPanel";
 
 export default async function Home() {
   const children = await getChildren();
@@ -24,6 +25,7 @@ export default async function Home() {
             Here is a calm view of today&apos;s family plan.
           </p>
         </header>
+        <AuthPanel />
 
         <section className="grid gap-4 md:grid-cols-2">
           {children.map((child) => (
