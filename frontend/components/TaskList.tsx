@@ -3,10 +3,11 @@
 import {
   createTaskRequest,
   deleteTaskRequest,
+  getTasksRequest,
   updateTaskCompletionRequest,
   updateTaskTitleRequest,
 } from "@/lib/tasksClient";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 type Task = {
   id: string;
@@ -21,6 +22,7 @@ type TaskListProps = {
 export function TaskList({ tasks }: TaskListProps) {
   const [currentTasks, setCurrentTasks] = useState(tasks);
   const [isUpdatingTaskId, setIsUpdatingTaskId] = useState<string | null>(null);
+  const [isLoadingTasks, setIsLoadingTasks] = useState(false);
 
   const completedCount = currentTasks.filter((task) => task.is_completed).length;
   const totalCount = currentTasks.length;
@@ -143,6 +145,24 @@ export function TaskList({ tasks }: TaskListProps) {
     }
   }
 
+  useEffect(() => {
+    async function loadTasks() {
+      setIsLoadingTasks(true);
+      setErrorMessage("");
+
+      try {
+        const loadedTasks = await getTasksRequest();
+        setCurrentTasks(loadedTasks);
+      } catch {
+        setErrorMessage("Unable to load tasks.");
+      } finally {
+        setIsLoadingTasks(false);
+      }
+    }
+
+    loadTasks();
+  }, []);
+
   return (
     <article className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
       <div className="flex items-start justify-between gap-4">
@@ -183,6 +203,10 @@ export function TaskList({ tasks }: TaskListProps) {
         <p className="mt-2 text-sm text-red-600">{errorMessage}</p>
       )}
 
+      {isLoadingTasks && (
+        <p className="mt-3 text-sm text-slate-500">Loading tasks...</p>
+      )}
+      
       <ul className="mt-4 space-y-3">
         {currentTasks.map((task) => {
           const isUpdating = isUpdatingTaskId === task.id;
